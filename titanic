@@ -1,0 +1,61 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.datasets import fetch_openml
+
+# 1. 데이터 로드
+print("타이타닉 데이터를 불러오는 중입니다...")
+titanic = fetch_openml('titanic', version=1, as_frame=True, parser='auto')
+df = titanic.frame
+
+# 2. 데이터 전처리
+df['survived'] = pd.to_numeric(df['survived'])
+df['age'] = pd.to_numeric(df['age'])
+df['age_group'] = pd.cut(df['age'], 
+                         bins=[0, 10, 20, 30, 40, 50, 60, 100], 
+                         labels=['0-10', '11-20', '21-30', '31-40', '41-50', '51-60', '60+'])
+
+# 3. 그래프 시각화 설정
+# 한글 폰트 설정 (Windows: Malgun Gothic, Mac: AppleGothic)
+plt.rcParams['font.family'] = 'Malgun Gothic' 
+plt.rcParams['axes.unicode_minus'] = False
+sns.set_theme(style="whitegrid", font=plt.rcParams['font.family'])
+
+fig, axes = plt.subplots(nrows=3, ncols=2, figsize=(14, 16))
+
+# --- [그래프 1 & 2] 성별(Sex) 분석 ---
+sns.countplot(data=df, x='sex', hue='survived', ax=axes[0, 0], palette='Set2')
+axes[0, 0].set_title('성별 생존수 (0: 사망, 1: 생존)')
+axes[0, 0].set_ylabel('탑승객 수')
+
+sns.barplot(data=df, x='sex', y='survived', ax=axes[0, 1], palette='Set2', errorbar=None)
+axes[0, 1].set_title('성별 생존률 (0 ~ 1)')
+axes[0, 1].set_ylabel('생존률')
+
+# --- [그래프 3 & 4] 객실 등급(Pclass) 분석 ---
+sns.countplot(data=df, x='pclass', hue='survived', ax=axes[1, 0], palette='Set3')
+axes[1, 0].set_title('객실 등급별 생존수')
+axes[1, 0].set_ylabel('탑승객 수')
+
+sns.barplot(data=df, x='pclass', y='survived', ax=axes[1, 1], palette='Set3', errorbar=None)
+axes[1, 1].set_title('객실 등급별 생존률')
+axes[1, 1].set_ylabel('생존률')
+
+# --- [그래프 5 & 6] 연령대(Age Group) 분석 ---
+sns.countplot(data=df, x='age_group', hue='survived', ax=axes[2, 0], palette='Pastel1')
+axes[2, 0].set_title('연령대별 생존수')
+axes[2, 0].set_ylabel('탑승객 수')
+
+sns.barplot(data=df, x='age_group', y='survived', ax=axes[2, 1], palette='Pastel1', errorbar=None)
+axes[2, 1].set_title('연령대별 생존률')
+axes[2, 1].set_ylabel('생존률')
+
+# ---------------------------------------------------------
+# [수정된 부분] 그래프 간의 간격 수동 조절
+# hspace: 위아래(수직) 그래프 간의 간격 (기본값보다 넓게 0.4 설정)
+# wspace: 좌우(수평) 그래프 간의 간격 (기본값보다 넓게 0.3 설정)
+# ---------------------------------------------------------
+plt.subplots_adjust(hspace=0.4, wspace=0.3)
+
+# 화면에 출력
+plt.show()
