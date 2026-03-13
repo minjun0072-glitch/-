@@ -1,0 +1,8 @@
+import seaborn as sns
+
+# 데이터 로드
+tips = sns.load_dataset('tips')
+
+# 30개의 표본을 무작위로 추출
+simple_random_sample = tips.sample(n=30, random_state=42)
+print(f"단순무작위 추출 건수: {len(simple_random_sample)}")

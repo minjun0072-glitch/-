@@ -1,0 +1,19 @@
+import seaborn as sns
+import random
+
+# 1. 데이터 로드
+tips = sns.load_dataset('tips')
+
+# 2. 'day'를 기준으로 집락 설정
+clusters = tips['day'].unique() 
+
+# 3. 무작위로 2개의 요일(집락) 선택
+selected_clusters = random.sample(list(clusters), 2)
+print(f"선택된 집락(요일): {selected_clusters}")
+
+# 4. 선택된 집락에 해당하는 모든 데이터 추출
+cluster_sample = tips[tips['day'].isin(selected_clusters)]
+
+print(f"--- 집락추출 결과 ---")
+print(f"추출된 데이터 건수: {len(cluster_sample)}개")
+print(cluster_sample['day'].unique())

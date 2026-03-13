@@ -1,0 +1,104 @@
+import seaborn as sns
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+import random
+
+# 1. 데이터 로드 및 모집단 통계량 계산
+tips = sns.load_dataset('tips')
+
+pop_mean = tips['total_bill'].mean()
+pop_var = tips['total_bill'].var()
+
+# 2. 표본 추출 (목표 표본 크기: 60, 랜덤 시드 제거로 매번 다르게 추출)
+n_sample = 60
+
+# 1) 단순무작위추출
+simple_sample = tips.sample(n=n_sample)
+
+# 2) 층화무작위추출 - 요일(day) 비율 유지
+stratified_sample, _ = train_test_split(
+    tips, train_size=n_sample, stratify=tips['day']
+)
+
+# 3) 집락추출 - 4개 요일 중 무작위 2개 요일 선택
+all_days = list(tips['day'].unique())
+selected_clusters = random.sample(all_days, 2)
+cluster_sample = tips[tips['day'].isin(selected_clusters)]
+
+# 3. 데이터 묶기
+datasets = [
+    ('Population (All)', tips),
+    ('Simple Random', simple_sample),
+    ('Stratified Random', stratified_sample),
+    (f'Cluster {selected_clusters}', cluster_sample)
+]
+
+# 4. 시각화 (1x4 그래프)
+fig, axes = plt.subplots(1, 4, figsize=(20, 5), sharex=True)
+colors = ['gray', 'skyblue', 'lightgreen', 'salmon']
+
+for i, (name, df) in enumerate(datasets):
+    ax = axes[i]
+    
+    # 밀도(density) 기준으로 그려 데이터 개수가 달라도 분포 형태를 비교할 수 있게 함
+    sns.histplot(data=df, x='total_bill', kde=True, color=colors[i], stat='density', ax=ax)
+    
+    mean_val = df['total_bill'].mean()
+    var_val = df['total_bill'].var()
+    
+    # 평균선 추가
+    ax.axvline(mean_val, color='red', linestyle='--', linewidth=2)
+    
+    # 제목 및 축 레이블
+    ax.set_title(f"{name}\n(n={len(df)})", fontsize=13)
+    ax.set_xlabel('Total Bill ($)')
+    if i == 0:
+        ax.set_ylabel('Density')
+    else:
+        ax.set_ylabel('')
+    
+    # 텍스트 박스 추가
+    info_text = f"Mean: {mean_val:.2f}\nVar: {var_val:.2f}"
+    ax.text(0.5, 0.75, info_text, transform=ax.transAxes, 
+            fontsize=12, bbox=dict(facecolor='white', alpha=0.8, edgecolor='gray'))
+
+plt.tight_layout()
+plt.show()
+
+# 5. 분석 결과 및 해설 출력
+print("-" * 70)
+print("[추출 기법별 통계량 비교 (현재 실행 기준)]")
+print("-" * 70)
+print(f"1. 모집단 (Population) - 평균: {pop_mean:.2f}, 분산: {pop_var:.2f}")
+print(f"2. 단순무작위 (Simple)   - 평균: {simple_sample['total_bill'].mean():.2f}, 분산: {simple_sample['total_bill'].var():.2f}")
+print(f"3. 층화무작위 (Stratify) - 평균: {stratified_sample['total_bill'].mean():.2f}, 분산: {stratified_sample['total_bill'].var():.2f}")
+print(f"4. 집락추출 (Cluster)    - 평균: {cluster_sample['total_bill'].mean():.2f}, 분산: {cluster_sample['total_bill'].var():.2f}")
+print("-" * 70)
+print("""
+[해설: 층화무작위추출법이 가장 적합합니다. ]
+
+코드를 여러 번 실행해보면 단순, 층화, 집락 추출 모두 표본에 따라 평균과 분산이 
+매번 변동되는 것을 확인할 수 있습니다. 그럼에도 불구하고 3가지 방법 중 
+층화무작위추출법이 모집단(tips)을 분석하는 데 가장 적합한 이유는 
+'구조적 안정성'에 있습니다.
+
+1. 요일별 특성이라는 변수 통제:
+tips 데이터는 요일에 따라 식사 금액과 손님 수의 패턴이 다릅니다. 
+단순무작위나 집락추출은 추출 과정에서 우연히 특정 요일(예: 주말)의 데이터만 
+과도하게 뽑힐 위험이 항상 존재합니다. 이 경우 표본이 전체 모집단을 대표하지 못하고 
+심각한 왜곡을 발생시킵니다.
+
+2. 비율 유지:
+반면 층화무작위추출법은 모집단을 구성하는 요일의 비율을 표본에서도 강제로 똑같이 맞춥니다.
+매번 뽑히는 개별 손님의 데이터는 무작위로 달라지더라도, 
+"목/금/토/일의 손님 비율"이라는 모집단의 핵심 구조는 절대 깨지지 않습니다.
+      
+3. 분산값 감소:
+층화무작위추출법은 다른 추출법 대비 분산값이 대부분 낮게 표시됩니다. 이것은 튀는 값들이 존재할
+확률이 줄어듬을 의미합니다. 
+      
+결론적으로, 층화무작위추출법은 특정 집단에 데이터가 쏠리는 '구조적 편향'을 
+원천적으로 차단하기 때문에, 반복 추출을 하더라도 분포의 형태와 평균, 분산이 
+모집단의 원래 특성을 가장 안정적으로 대변하게 됩니다.
+""")
