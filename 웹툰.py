@@ -1,43 +1,44 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 import time
 
-# 1. 브라우저 옵션 설정
-options = Options()
-options.add_experimental_option("detach", True) # 실행 완료 후 브라우저 유지
-# options.add_argument("--headless") # 창을 띄우지 않고 실행하고 싶을 때 주석 해제
-
-# 2. 드라이버 실행
-driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+# 1. 브라우저 설정
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
 
 try:
-    # 3. 웹툰 페이지 접속
-    url = "https://comic.naver.com/webtoon" # 월요일 웹툰 예시
+    # 2. 페이지 접속
+    url = "https://comic.naver.com/webtoon"
     driver.get(url)
-
-    # 4. 명시적 대기 (페이지의 특정 요소가 나타날 때까지 최대 10초 대기)
-    wait = WebDriverWait(driver, 10)
-    # 웹툰 목록을 담고 있는 리스트 요소가 로드될 때까지 기다림
-    webtoon_list = wait.until(EC.presence_of_all_elements_located((By.CLASS_NAME, "ContentList__content_list--q59bc")))
-
-    print("=== 인기 웹툰 목록 추출 시작 ===")
     
-    # 5. 데이터 추출
-    # 각 웹툰 아이템들을 찾습니다. (클래스 명은 사이트 업데이트에 따라 변할 수 있습니다)
-    webtoons = driver.find_elements(By.CLASS_NAME, "Poster__link--sop9C")
+    # 3. '이달의 신규 웹툰' 영역이 로드될 때까지 대기
+    wait = WebDriverWait(driver, 10)
+    # 신규 웹툰 섹션의 컨테이너 요소를 찾습니다.
+    new_webtoons_section = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "AsideList__aside_list--u36_I"))) 
 
-    for i, webtoon in enumerate(webtoons[:10]): # 상위 10개만 출력
-        title = webtoon.find_element(By.CLASS_NAME, "ContentTitle__title--eijm6").text
-        link = webtoon.get_attribute("href")
-        print(f"{i+1}위: {title}")
-        print(f"   링크: {link}")
+    print("=== 이달의 신규 웹툰 정보 ===")
+
+    # 4. 각 웹툰 아이템 추출 (리스트 형태)
+    items = driver.find_elements(By.CLASS_NAME, "AsideList__item--S_p9l")
+
+    for item in items:
+        try:
+            # 제목 추출
+            title = item.find_element(By.CLASS_NAME, "ContentTitle__title--eijm6").text
+            # 작가 추출
+            author = item.find_element(By.CLASS_NAME, "ContentAuthor__author--CT_nI").text
+            
+            # 내용을 보려면 마우스를 올리거나 상세 페이지에 가야 할 수도 있지만, 
+            # 메인에 요약이 있다면 해당 클래스를 가져옵니다.
+            # (네이버 메인 구조상 요약은 보통 상세 페이지에 있으므로 여기서는 제목/작가 중심)
+            
+            print(f"제목: {title} | 작가: {author}")
+        except Exception as e:
+            continue
 
 finally:
-    # 6. 종료 (테스트 중이라면 잠시 대기 후 닫기)
-    time.sleep(5)
+    time.sleep(3)
     driver.quit()
